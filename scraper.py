@@ -3,6 +3,8 @@ import requests
 import pandas as pd
 import urllib3, traceback,certifi,os
 from urllib.parse import urljoin, urlparse
+from urllib.parse import urlsplit, urlunsplit, quote
+
 
 
 head = {
@@ -15,6 +17,18 @@ head = {
     'Connection': 'keep-alive',
 }
 
+
+
+
+def fix_url(u: str) -> str:
+    s = urlsplit(u)
+    path = s.path
+    i = path.find("/sites/")
+    if i != -1:
+        path = path[i:]          
+    path = "/".join(quote(seg, safe="%:@") for seg in path.split("/"))
+    return urlunsplit((s.scheme or "https", s.netloc or "www.ispch.gob.cl", path, "", ""))
+
 def url_scraper(start,end):
 
     for y in range(start,end+1):
@@ -24,7 +38,6 @@ def url_scraper(start,end):
 
         response = requests.get(isp_url, headers=head,verify=False)
         soup = BeautifulSoup(response.text, 'html.parser')
-        print("\n--- HTML de la página principal (primeras 500 caracteres) ---")
         print(str(soup)[:500])
         print("\n---------------------------------------------------------------")
         
@@ -42,6 +55,7 @@ def url_scraper(start,end):
 
                 if pdf_link:
                     pdf_url = urljoin(page_url, pdf_link["href"])
+                    pdf_url=fix_url(pdf_url)
                     pdf_urls.append(pdf_url)
                     # Extraer el nombre del informe del texto del enlace o de la URL del PDF
                     pdf_name = pdf_link.text.strip() if pdf_link.text.strip() else pdf_url.split('/')[-1].replace('.pdf', '')
@@ -53,6 +67,7 @@ def url_scraper(start,end):
 
     df=pd.DataFrame(zip(pdf_urls, pdf_report_names),columns=["url","report_name"])
     return df 
+
 
 
 
@@ -115,7 +130,7 @@ def download_pdf(pdf_url, save_path, headers=None):
 if __name__ == "__main__":
     BASE_DIR = "informes_respiratorios"
     os.makedirs(BASE_DIR, exist_ok=True)
-    df=url_scraper(2024,2025)
+    df=url_scraper(2018,2019)
     
     for x in range(0,len(df)):
         path = os.path.join("informes_respiratorios", df['report_name'][x] + ".pdf")

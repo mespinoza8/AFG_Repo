@@ -7,7 +7,6 @@ def rename_pdfs():
     print(f"Renombrando PDFs en el directorio: {DIRECTORY}")
     for filename in os.listdir(DIRECTORY):
         if filename.endswith(".pdf"):
-            # Modificado para aceptar SE.XX o SEXX
             match = re.search(r"SE\.?(\d{1,2})\s+(\d{2}-\d{2}-\d{4})", filename)
             if match:
                 se_number = match.group(1)

@@ -18,13 +18,18 @@ head = {
 def url_scraper(start,end):
 
     for y in range(start,end+1):
-        
+        print(f"\n--- Procesando año: {y} ---")
         isp_url=f"https://www.ispch.gob.cl/biomedico/vigilancia-de-laboratorio/ambitos-de-vigilancia/vigilancia-virus-respiratorios/informes-virus-respiratorios/?y={y}"
+        print(f"URL de año: {isp_url}")
 
         response = requests.get(isp_url, headers=head,verify=False)
         soup = BeautifulSoup(response.text, 'html.parser')
+        print("\n--- HTML de la página principal (primeras 500 caracteres) ---")
+        print(str(soup)[:500])
+        print("\n---------------------------------------------------------------")
         
         report_page_urls = [a["href"] for a in soup.find_all("div",class_="container")[1].find_all("table")[0].find_all("a")]
+        print(f"Se encontraron {len(report_page_urls)} URLs de páginas de informe para el año {y}.")
         
         pdf_urls = []
         pdf_report_names = []
@@ -38,8 +43,8 @@ def url_scraper(start,end):
                 if pdf_link:
                     pdf_url = urljoin(page_url, pdf_link["href"])
                     pdf_urls.append(pdf_url)
-                    # Extraer el nombre del informe de la URL del PDF
-                    pdf_name = pdf_url.split('/')[-1].replace('.pdf', '')
+                    # Extraer el nombre del informe del texto del enlace o de la URL del PDF
+                    pdf_name = pdf_link.text.strip() if pdf_link.text.strip() else pdf_url.split('/')[-1].replace('.pdf', '')
                     pdf_report_names.append(pdf_name)
                 else:
                     print(f"No se encontró un enlace PDF en: {page_url}")
@@ -110,7 +115,7 @@ def download_pdf(pdf_url, save_path, headers=None):
 if __name__ == "__main__":
     BASE_DIR = "informes_respiratorios"
     os.makedirs(BASE_DIR, exist_ok=True)
-    df=url_scraper(2019,2025)
+    df=url_scraper(2024,2025)
     
     for x in range(0,len(df)):
         path = os.path.join("informes_respiratorios", df['report_name'][x] + ".pdf")
